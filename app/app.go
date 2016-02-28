@@ -31,6 +31,10 @@ import (
 func init() {
 	// GLFW event handling must run on the main OS thread
 	runtime.LockOSThread()
+	AmbientColor = mgl32.Vec4{0.2, 0.2, 0.2, 1.0}
+	LightPos = mgl32.Vec3{0.0, 0.0, 10.0}
+	LightColor = mgl32.Vec4{0.7, 0.7, 0.7}
+	LightPower = 1000
 }
 
 type Config struct {
@@ -46,9 +50,13 @@ type Config struct {
 }
 
 var (
-	MouseX    float32
-	MouseY    float32
-	MouseLeft bool
+	MouseX       float32
+	MouseY       float32
+	MouseLeft    bool
+	AmbientColor mgl32.Vec4
+	LightPos     mgl32.Vec3
+	LightColor   mgl32.Vec4
+	LightPower   float32
 )
 
 func Run(config Config) {
@@ -135,6 +143,15 @@ func Run(config Config) {
 		log.Fatalln(err)
 	}
 
+	normalMap, err := os.Open(fmt.Sprintf("%s.normal.png", config.TextureGroup))
+	defer normalMap.Close()
+	if err != nil {
+		log.Fatalln("failed to open tex:", err)
+	}
+	if err := shader.LoadTex(normalMap, gl.TEXTURE1); err != nil {
+		log.Fatalln(err)
+	}
+
 	mdlReader, err := os.Open(config.ModelName)
 	defer mdlReader.Close()
 	if err != nil {
@@ -175,13 +192,25 @@ func Run(config Config) {
 	// Configure global settings
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
-	gl.ClearColor(1.0, 1.0, 1.0, 1.0)
 
 	angle := 0.0
 	previousTime := glfw.GetTime()
 
 	for !window.ShouldClose() {
+		gl.ClearColor(AmbientColor[0], AmbientColor[1], AmbientColor[2], 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		lightPosLoc := gl.GetUniformLocation(shader.Prog, gl.Str("LightPos\x00"))
+		gl.Uniform3f(lightPosLoc, LightPos[0], LightPos[1], LightPos[2])
+
+		ambientColorLoc := gl.GetUniformLocation(shader.Prog, gl.Str("AmbientColor\x00"))
+		gl.Uniform4f(ambientColorLoc, AmbientColor[0], AmbientColor[1], AmbientColor[2], AmbientColor[3])
+
+		lightColorLoc := gl.GetUniformLocation(shader.Prog, gl.Str("LightColor\x00"))
+		gl.Uniform4f(lightColorLoc, LightColor[0], LightColor[1], LightColor[2], LightColor[3])
+
+		lightPowerLoc := gl.GetUniformLocation(shader.Prog, gl.Str("LightPower\x00"))
+		gl.Uniform1f(lightPowerLoc, LightPower)
 
 		//for i := glfw.Joystick(0); i < 16; i++ {
 		//i := glfw.Joystick(0)
@@ -205,8 +234,15 @@ func Run(config Config) {
 
 		gl.BindVertexArray(vao)
 
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, shader.ColorMap)
+		if _, ok := shader.Tex[gl.TEXTURE0]; ok {
+			gl.ActiveTexture(gl.TEXTURE0)
+			gl.BindTexture(gl.TEXTURE_2D, shader.Tex[gl.TEXTURE0])
+		}
+
+		if _, ok := shader.Tex[gl.TEXTURE1]; ok {
+			gl.ActiveTexture(gl.TEXTURE1)
+			gl.BindTexture(gl.TEXTURE_2D, shader.Tex[gl.TEXTURE1])
+		}
 
 		gl.DrawElements(gl.TRIANGLES, int32(mdl.FaceCount)*3, gl.UNSIGNED_INT, nil)
 
@@ -218,12 +254,103 @@ func Run(config Config) {
 
 func cursorPositionCallback(w *glfw.Window, x, y float64) {
 	MouseX = float32(x)
-	MouseY = float32(y)
+	_, h := w.GetSize()
+	MouseY = float32(h) - float32(y)
+	LightPos[0] = MouseX
+	LightPos[1] = MouseY
 }
 
 func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 	if action == glfw.Release && key == glfw.KeyEscape {
 		w.SetShouldClose(true)
+	}
+
+	if action == glfw.Release && key == glfw.KeyEqual {
+		LightPos[2] += 1
+	}
+	if action == glfw.Release && key == glfw.KeyMinus {
+		LightPos[2] -= 1
+	}
+
+	if action == glfw.Release && key == glfw.KeyQ {
+		AmbientColor[0] += 0.1
+		if AmbientColor[0] > 1.0 {
+			AmbientColor[0] = 1.0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyA {
+		AmbientColor[0] -= 0.1
+		if AmbientColor[0] < 0 {
+			AmbientColor[0] = 0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyW {
+		AmbientColor[1] += 0.1
+		if AmbientColor[1] > 1.0 {
+			AmbientColor[1] = 1.0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyS {
+		AmbientColor[1] -= 0.1
+		if AmbientColor[1] < 0 {
+			AmbientColor[1] = 0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyE {
+		AmbientColor[2] += 0.1
+		if AmbientColor[2] > 1.0 {
+			AmbientColor[2] = 1.0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyD {
+		AmbientColor[2] -= 0.1
+		if AmbientColor[2] < 0 {
+			AmbientColor[2] = 0
+		}
+	}
+
+	if action == glfw.Release && key == glfw.KeyR {
+		LightColor[0] += 0.1
+		if LightColor[0] > 1.0 {
+			LightColor[0] = 1.0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyF {
+		LightColor[0] -= 0.1
+		if LightColor[0] < 0 {
+			LightColor[0] = 0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyT {
+		LightColor[1] += 0.1
+		if LightColor[1] > 1.0 {
+			LightColor[1] = 1.0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyG {
+		LightColor[1] -= 0.1
+		if LightColor[1] < 0 {
+			LightColor[1] = 0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyY {
+		LightColor[2] += 0.1
+		if LightColor[2] > 1.0 {
+			LightColor[2] = 1.0
+		}
+	}
+	if action == glfw.Release && key == glfw.KeyH {
+		LightColor[2] -= 0.1
+		if LightColor[2] < 0 {
+			LightColor[2] = 0
+		}
+	}
+
+	if action == glfw.Release && key == glfw.KeyU {
+		LightPower += 10
+	}
+	if action == glfw.Release && key == glfw.KeyJ {
+		LightPower -= 10
 	}
 }
 

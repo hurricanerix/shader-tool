@@ -28,12 +28,14 @@ import (
 )
 
 type Shader struct {
-	Prog     uint32
-	ColorMap uint32
+	Prog uint32
+	Tex  map[uint32]uint32
 }
 
 func New() Shader {
-	s := Shader{}
+	s := Shader{
+		Tex: make(map[uint32]uint32),
+	}
 	return s
 }
 
@@ -92,7 +94,7 @@ func compileShader(r io.Reader, t uint32) (uint32, error) {
 		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
 		log := strings.Repeat("\x00", int(logLength+1))
 		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
-		return 0, fmt.Errorf("failed to compile %v: %v", r, log)
+		return 0, fmt.Errorf("failed to compile %s: %v", r, log)
 	}
 
 	return shader, nil
@@ -128,6 +130,6 @@ func (s *Shader) LoadTex(r io.Reader, id uint32) error {
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(rgba.Pix))
-	s.ColorMap = tex
+	s.Tex[id] = tex
 	return nil
 }
