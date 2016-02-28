@@ -28,7 +28,7 @@ var (
 func init() {
 	flag.StringVar(&config.ModelName, "model", "assets/models/cube.ply", "Name of 3D model to render.")
 	flag.StringVar(&config.TextureGroup, "texture", "assets/textures/marble", "Name of texture group to use.")
-	flag.StringVar(&config.ShaderGroup, "shader", "assets/shaders/simple", "Name of shader group to use.")
+	flag.StringVar(&config.ShaderGroup, "shader", "assets/shaders/normalmap", "Name of shader group to use.")
 	flag.IntVar(&config.MajorVer, "major", 4, "OpenGL Major Version.")
 	flag.IntVar(&config.MinorVer, "minor", 1, "OpenGL Minor Version.")
 	flag.BoolVar(&config.UseCore, "use-core", true, "Use OpenGL Core Profile.")
