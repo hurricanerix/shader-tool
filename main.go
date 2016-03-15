@@ -35,8 +35,8 @@ var (
 
 func init() {
 	flag.StringVar(&modelFile, "model", "assets/models/cube.ply", "Filename of 3D model to render.")
-	flag.StringVar(&colorFile, "color", "assets/textures/marble.png", "Filename of texture to use for color map.")
-	flag.StringVar(&normalFile, "normal", "assets/textures/marble.normal.png", "Filename of texture to use for normal map.")
+	flag.StringVar(&colorFile, "color", "", "Filename of texture to use for color map.")
+	flag.StringVar(&normalFile, "normal", "", "Filename of texture to use for normal map.")
 	flag.StringVar(&vertFiles, "vert", "assets/shaders/normalmap.vert", "List of vertex shader filenames to compile (separated by commas).")
 	flag.StringVar(&fragFiles, "frag", "assets/shaders/normalmap.frag", "List of fragment shaders filenames to compile (separated by commas).")
 

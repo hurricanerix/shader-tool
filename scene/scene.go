@@ -16,6 +16,11 @@
 package scene
 
 import (
+	"fmt"
+	"image"
+	"image/draw"
+	_ "image/png" // register PNG decode
+	"io"
 	"log"
 	"os"
 
@@ -88,6 +93,10 @@ type Scene struct {
 	LightPosLoc     int32
 	LightColorLoc   int32
 	LightPowerLoc   int32
+
+	// Texture Locations
+	ColorMapLoc  int32
+	NormalMapLoc int32
 }
 
 // Setup resources required to update/display the scene.
@@ -127,33 +136,34 @@ func (s *Scene) Setup(ctx *app.Context) error {
 	s.ModelMatrixLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ModelMatrix\x00"))
 	gl.UniformMatrix4fv(s.ModelMatrixLoc, 1, false, &modelMatrix[0])
 
-	textureUniform := gl.GetUniformLocation(s.Programs[progID], gl.Str("ColorMap\x00"))
-	gl.Uniform1i(textureUniform, 0)
-
-	gl.BindFragDataLocation(s.Programs[progID], 0, gl.Str("FragColor\x00"))
-
-	// Load the texture
-	/*
-		colorMap, err := os.Open("assets/textures/marble.png")
+	if s.ColorFile != "" {
+		s.ColorMapLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ColorMap\x00"))
+		gl.Uniform1i(s.ColorMapLoc, 0)
+		colorMap, err := os.Open(s.ColorFile)
+		println(s.ColorFile)
 		defer colorMap.Close()
 		if err != nil {
 			log.Fatalln("failed to open tex:", err)
 		}
+		if _, err := LoadTex(colorMap, gl.TEXTURE0); err != nil {
+			log.Fatalln(err)
+		}
+	}
 
-			if err := shader.LoadTex(colorMap, gl.TEXTURE0); err != nil {
-				log.Fatalln(err)
-			}
-
-
-		normalMap, err := os.Open("assets/textures/marble.normal.png")
+	if s.NormalFile != "" {
+		s.NormalMapLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ColorMap\x00"))
+		gl.Uniform1i(s.NormalMapLoc, 1)
+		normalMap, err := os.Open(s.NormalFile)
 		defer normalMap.Close()
 		if err != nil {
 			log.Fatalln("failed to open tex:", err)
 		}
-		if err := shader.LoadTex(normalMap, gl.TEXTURE1); err != nil {
+		if _, err := LoadTex(normalMap, gl.TEXTURE1); err != nil {
 			log.Fatalln(err)
 		}
-	*/
+	}
+
+	gl.BindFragDataLocation(s.Programs[progID], 0, gl.Str("FragColor\x00"))
 
 	mdlReader, err := os.Open(s.ModelFile)
 	defer mdlReader.Close()
@@ -361,16 +371,15 @@ func mouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Ac
 	*/
 }
 
-/*
-func (s *Shader) LoadTex(r io.Reader, id uint32) error {
+func LoadTex(r io.Reader, id uint32) (uint32, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	rgba := image.NewRGBA(img.Bounds())
 	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return fmt.Errorf("unsupported stride")
+		return 0, fmt.Errorf("unsupported stride")
 	}
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
 
@@ -392,7 +401,5 @@ func (s *Shader) LoadTex(r io.Reader, id uint32) error {
 		gl.RGBA,
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(rgba.Pix))
-	s.Tex[id] = tex
-	return nil
+	return tex, nil
 }
-*/
