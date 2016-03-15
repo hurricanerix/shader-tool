@@ -17,6 +17,7 @@ package main
 
 import (
 	"flag"
+	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/hurricanerix/go-gl-utils/app"
@@ -28,12 +29,16 @@ var (
 	modelFile  string
 	colorFile  string
 	normalFile string
+	vertFiles  string
+	fragFiles  string
 )
 
 func init() {
-	flag.StringVar(&modelFile, "model", "assets/models/cube.ply", "Name of 3D model to render.")
-	flag.StringVar(&colorFile, "color", "assets/textures/marble.png", "Name of texture to use for color.")
-	flag.StringVar(&normalFile, "normal", "assets/textures/marble.normal.png", "Name of texture to use for normals.")
+	flag.StringVar(&modelFile, "model", "assets/models/cube.ply", "Filename of 3D model to render.")
+	flag.StringVar(&colorFile, "color", "assets/textures/marble.png", "Filename of texture to use for color map.")
+	flag.StringVar(&normalFile, "normal", "assets/textures/marble.normal.png", "Filename of texture to use for normal map.")
+	flag.StringVar(&vertFiles, "vert", "assets/shaders/normalmap.vert", "List of vertex shader filenames to compile (separated by commas).")
+	flag.StringVar(&fragFiles, "frag", "assets/shaders/normalmap.frag", "List of fragment shaders filenames to compile (separated by commas).")
 
 	if err := path.SetWorkingDir("github.com/hurricanerix/shader-tool"); err != nil {
 		panic(err)
@@ -63,6 +68,8 @@ func main() {
 		ModelFile:  modelFile,
 		ColorFile:  colorFile,
 		NormalFile: normalFile,
+		VertFiles:  strings.Split(vertFiles, ","),
+		FragFiles:  strings.Split(fragFiles, ","),
 	}
 
 	// Create a new app, providing a config and scene.

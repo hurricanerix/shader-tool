@@ -51,6 +51,8 @@ type Scene struct {
 	ModelFile  string
 	ColorFile  string
 	NormalFile string
+	VertFiles  []string
+	FragFiles  []string
 
 	// Internal vars (maybe should be private)
 	Programs    [numPrograms]uint32
@@ -82,10 +84,12 @@ func (s *Scene) Setup(ctx *app.Context) error {
 	s.LightColor = mgl32.Vec4{0.7, 0.7, 0.7}
 	s.LightPower = 1000
 
-	shaders := []shader.Info{
-
-		shader.Info{Type: gl.VERTEX_SHADER, Filename: "assets/shaders/normalmap.vert"},
-		shader.Info{Type: gl.FRAGMENT_SHADER, Filename: "assets/shaders/normalmap.frag"},
+	shaders := []shader.Info{}
+	for i := range s.VertFiles {
+		shaders = append(shaders, shader.Info{Type: gl.VERTEX_SHADER, Filename: s.VertFiles[i]})
+	}
+	for i := range s.FragFiles {
+		shaders = append(shaders, shader.Info{Type: gl.FRAGMENT_SHADER, Filename: s.FragFiles[i]})
 	}
 
 	program, err := shader.Load(&shaders)
