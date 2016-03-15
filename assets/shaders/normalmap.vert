@@ -57,7 +57,7 @@ void main() {
   // TODO: bi-tangent should point in direction of increasing V 
   vec3 MCTangent = tangent(MCNormal);
   mat3 mv3Matrix = mat3x3(mvMatrix);
-  vec3 n = normalize(MCNormal); // TODO: fix normalize(mv3Matrix * MCNormal);
+  vec3 n = normalize(mv3Matrix * MCNormal);
   vec3 t = normalize(mv3Matrix * MCTangent);
   vec3 b = normalize(mv3Matrix * cross(n, t));
 

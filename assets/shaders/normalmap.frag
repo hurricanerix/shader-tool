@@ -14,6 +14,7 @@
 #version 410
 
 uniform vec4 AmbientColor;
+uniform int UseColorMap;
 uniform sampler2D ColorMap;
 uniform sampler2D NormalMap;
 
@@ -29,8 +30,12 @@ in vec3 EyeDir;
 out vec4 FragColor;
 
 void main() {
-  float alpha = texture(ColorMap, TexCoord.st).a;
-  vec3 diffuse = texture(ColorMap, TexCoord.st).rgb;
+  float alpha = 1.0;
+  vec3 diffuse = vec3(0.2, 0.2, 0.3);
+  if (UseColorMap == 1) {
+    alpha = texture(ColorMap, TexCoord.st).a;
+    diffuse = texture(ColorMap, TexCoord.st).rgb;
+  }
   vec3 ambient = AmbientColor.rgb * diffuse;
   vec3 specular = diffuse/8;
 

@@ -47,6 +47,12 @@ const ( // Buffer Names
 	numBuffers  = iota
 )
 
+const ( // Texture ID/Names?
+	colorID     = iota
+	normalID    = iota
+	numTextures = iota
+)
+
 const ( // Attrib Locations
 	mcVertexLoc = 0
 	mcNormalLoc = 1
@@ -68,7 +74,7 @@ type Scene struct {
 
 	// Model
 	Model model.Model
-	Angle float32
+	Angle mgl32.Vec3
 
 	// Shaders
 	Programs    [numPrograms]uint32
@@ -84,6 +90,7 @@ type Scene struct {
 	LightPos     mgl32.Vec3
 	LightColor   mgl32.Vec4
 	LightPower   float32
+	UseColorMap  int32
 
 	// Uniform Locations
 	ProjMatrixLoc   int32
@@ -93,6 +100,7 @@ type Scene struct {
 	LightPosLoc     int32
 	LightColorLoc   int32
 	LightPowerLoc   int32
+	UseColorMapLoc  int32
 
 	// Texture Locations
 	ColorMapLoc  int32
@@ -104,7 +112,7 @@ func (s *Scene) Setup(ctx *app.Context) error {
 	s.AmbientColor = mgl32.Vec4{0.2, 0.2, 0.2, 1.0}
 	s.LightPos = mgl32.Vec3{0.0, 0.0, 10.0}
 	s.LightColor = mgl32.Vec4{0.7, 0.7, 0.7}
-	s.LightPower = 1000
+	s.LightPower = 500
 
 	shaders := []shader.Info{}
 	for i := range s.VertFiles {
@@ -122,6 +130,7 @@ func (s *Scene) Setup(ctx *app.Context) error {
 
 	gl.UseProgram(s.Programs[progID])
 
+	gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.DEPTH_TEST)
 
 	s.ProjMatrix = mgl32.Perspective(mgl32.DegToRad(45.0), float32(ctx.ScreenWidth)/float32(ctx.ScreenHeight), 0.1, 10.0)
@@ -136,29 +145,32 @@ func (s *Scene) Setup(ctx *app.Context) error {
 	s.ModelMatrixLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ModelMatrix\x00"))
 	gl.UniformMatrix4fv(s.ModelMatrixLoc, 1, false, &modelMatrix[0])
 
+	s.UseColorMapLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("UseColorMap\x00"))
 	if s.ColorFile != "" {
+		gl.Uniform1i(s.UseColorMapLoc, 1)
 		s.ColorMapLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ColorMap\x00"))
 		gl.Uniform1i(s.ColorMapLoc, 0)
 		colorMap, err := os.Open(s.ColorFile)
-		println(s.ColorFile)
 		defer colorMap.Close()
 		if err != nil {
 			log.Fatalln("failed to open tex:", err)
 		}
-		if _, err := LoadTex(colorMap, gl.TEXTURE0); err != nil {
+		if _, err := loadTex(colorMap, gl.TEXTURE0); err != nil {
 			log.Fatalln(err)
 		}
+	} else {
+		gl.Uniform1i(s.UseColorMapLoc, 0)
 	}
 
 	if s.NormalFile != "" {
-		s.NormalMapLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ColorMap\x00"))
+		s.NormalMapLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("NormalMap\x00"))
 		gl.Uniform1i(s.NormalMapLoc, 1)
 		normalMap, err := os.Open(s.NormalFile)
 		defer normalMap.Close()
 		if err != nil {
 			log.Fatalln("failed to open tex:", err)
 		}
-		if _, err := LoadTex(normalMap, gl.TEXTURE1); err != nil {
+		if _, err := loadTex(normalMap, gl.TEXTURE1); err != nil {
 			log.Fatalln(err)
 		}
 	}
@@ -217,8 +229,13 @@ func (s *Scene) Setup(ctx *app.Context) error {
 
 // Update the state of your scene.
 func (s *Scene) Update(dt float32) {
-	s.Angle += dt * 141
-	s.ModelMatrix = mgl32.HomogRotate3D(float32(s.Angle), mgl32.Vec3{0, 1, 0})
+	s.Angle[0] += dt * 10 * 3.0
+	s.Angle[1] += dt * 10 * 10.0
+	s.Angle[2] += dt * 10 * 7.0
+	s.ModelMatrix = mgl32.Ident4()
+	s.ModelMatrix = s.ModelMatrix.Mul4(mgl32.HomogRotate3D(float32(s.Angle[0]), mgl32.Vec3{1, 0, 0}))
+	s.ModelMatrix = s.ModelMatrix.Mul4(mgl32.HomogRotate3D(float32(s.Angle[1]), mgl32.Vec3{0, 1, 0}))
+	s.ModelMatrix = s.ModelMatrix.Mul4(mgl32.HomogRotate3D(float32(s.Angle[2]), mgl32.Vec3{0, 0, 1}))
 	gl.ClearColor(s.AmbientColor[0], s.AmbientColor[1], s.AmbientColor[2], 1.0)
 }
 
@@ -371,7 +388,7 @@ func mouseButtonCallback(w *glfw.Window, button glfw.MouseButton, action glfw.Ac
 	*/
 }
 
-func LoadTex(r io.Reader, id uint32) (uint32, error) {
+func loadTex(r io.Reader, id uint32) (uint32, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
 		return 0, err
@@ -387,6 +404,8 @@ func LoadTex(r io.Reader, id uint32) (uint32, error) {
 	gl.GenTextures(1, &tex)
 	gl.ActiveTexture(id)
 	gl.BindTexture(gl.TEXTURE_2D, tex)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_BASE_LEVEL, 0)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAX_LEVEL, 0)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
