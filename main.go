@@ -50,7 +50,7 @@ func main() {
 
 	// Create a config.  See app.Config for details on supported values.
 	c := app.Config{
-		Name:                "Example App",
+		Name:                "Shader Tool",
 		DefaultScreenWidth:  640,
 		DefaultScreenHeight: 480,
 		EscapeToQuit:        true,
