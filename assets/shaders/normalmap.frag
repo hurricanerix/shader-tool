@@ -29,8 +29,10 @@ in vec2 TexCoord;
 out vec4 FragColor;
 
 void main() {
-  float alpha = texture(ColorMap, TexCoord.st).a;
-  vec3 diffuse = texture(ColorMap, TexCoord.st).rgb;
+  float alpha = 1.0;
+  vec3 diffuse = vec3(0.0, 0.0, 0.2);
+  //alpha = texture(ColorMap, TexCoord.st).a;
+  //diffuse = texture(ColorMap, TexCoord.st).rgb;
   vec3 ambient = AmbientColor.rgb * diffuse;
   vec3 specular = diffuse/8;
 

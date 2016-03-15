@@ -18,27 +18,56 @@ package main
 import (
 	"flag"
 
-	"github.com/hurricanerix/shader-tool/app"
+	"github.com/go-gl/mathgl/mgl32"
+	"github.com/hurricanerix/go-gl-utils/app"
+	"github.com/hurricanerix/go-gl-utils/path"
+	"github.com/hurricanerix/shader-tool/scene"
 )
 
 var (
-	config app.Config
+	modelFile  string
+	colorFile  string
+	normalFile string
 )
 
 func init() {
-	flag.StringVar(&config.ModelName, "model", "assets/models/cube.ply", "Name of 3D model to render.")
-	flag.StringVar(&config.TextureGroup, "texture", "assets/textures/marble", "Name of texture group to use.")
-	flag.StringVar(&config.ShaderGroup, "shader", "assets/shaders/normalmap", "Name of shader group to use.")
-	flag.IntVar(&config.MajorVer, "major", 4, "OpenGL Major Version.")
-	flag.IntVar(&config.MinorVer, "minor", 1, "OpenGL Minor Version.")
-	flag.BoolVar(&config.UseCore, "use-core", true, "Use OpenGL Core Profile.")
-	flag.IntVar(&config.WinWidth, "width", 800, "Window width in pixels.")
-	flag.IntVar(&config.WinHeight, "height", 600, "Window height in pixels.")
-	flag.BoolVar(&config.Fullscreen, "fullscreen", false, "Run in fullscreen window.")
+	flag.StringVar(&modelFile, "model", "assets/models/cube.ply", "Name of 3D model to render.")
+	flag.StringVar(&colorFile, "color", "assets/textures/marble.png", "Name of texture to use for color.")
+	flag.StringVar(&normalFile, "normal", "assets/textures/marble.normal.png", "Name of texture to use for normals.")
+
+	if err := path.SetWorkingDir("github.com/hurricanerix/shader-tool"); err != nil {
+		panic(err)
+	}
 }
 
 func main() {
 	flag.Parse()
 
-	app.Run(config)
+	// Create a config.  See app.Config for details on supported values.
+	c := app.Config{
+		Name:                "Example App",
+		DefaultScreenWidth:  640,
+		DefaultScreenHeight: 480,
+		EscapeToQuit:        true,
+		SupportedGLVers: []mgl32.Vec2{
+			mgl32.Vec2{4, 3}, // Try to load a OpenGL 4.3 context.
+			mgl32.Vec2{4, 1}, // If that fails, try to load a 4.1 contex.
+			// If all fail, a.Run() will return an error.
+		},
+		KeyCallback: scene.KeyCallback,
+	}
+
+	// Create an instance of your scene.
+	// See app.Scene for details on this interface.
+	s := &scene.Scene{
+		ModelFile:  modelFile,
+		ColorFile:  colorFile,
+		NormalFile: normalFile,
+	}
+
+	// Create a new app, providing a config and scene.
+	a := app.New(c, s)
+	if err := a.Run(); err != nil {
+		panic(err)
+	}
 }
