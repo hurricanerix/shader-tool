@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#version 330
+#version 410
 
 uniform vec4 AmbientColor;
 uniform sampler2D ColorMap;
@@ -21,10 +21,10 @@ uniform vec3 LightPos;
 uniform vec4 LightColor;
 uniform float LightPower;
 
+in vec2 TexCoord;
 in vec3 Pos;
 in vec3 LightDir;
 in vec3 EyeDir;
-in vec2 TexCoord;
 
 out vec4 FragColor;
 

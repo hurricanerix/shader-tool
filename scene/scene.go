@@ -44,6 +44,8 @@ const ( // Buffer Names
 
 const ( // Attrib Locations
 	mcVertexLoc = 0
+	mcNormalLoc = 1
+	texCoord0   = 2
 )
 
 type Scene struct {
@@ -54,27 +56,38 @@ type Scene struct {
 	VertFiles  []string
 	FragFiles  []string
 
-	// Internal vars (maybe should be private)
+	// Input
+	MouseX    float32
+	MouseY    float32
+	MouseLeft bool
+
+	// Model
+	Model model.Model
+	Angle float32
+
+	// Shaders
 	Programs    [numPrograms]uint32
 	VAOs        [numVAOs]uint32
 	NumVertices [numVAOs]int32
 	Buffers     [numBuffers]uint32
 
-	MouseX          float32
-	MouseY          float32
-	MouseLeft       bool
-	AmbientColor    mgl32.Vec4
-	AmbientColorLoc int32
-	LightPos        mgl32.Vec3
-	LightPosLoc     int32
-	LightColor      mgl32.Vec4
-	LightColorLoc   int32
-	LightPower      float32
-	LightPowerLoc   int32
-	Model           model.Model
-	Angle           float32
-	ModelMatrix     mgl32.Mat4
+	// Uniforms
+	ProjMatrix   mgl32.Mat4
+	ViewMatrix   mgl32.Mat4
+	ModelMatrix  mgl32.Mat4
+	AmbientColor mgl32.Vec4
+	LightPos     mgl32.Vec3
+	LightColor   mgl32.Vec4
+	LightPower   float32
+
+	// Uniform Locations
+	ProjMatrixLoc   int32
+	ViewMatrixLoc   int32
 	ModelMatrixLoc  int32
+	AmbientColorLoc int32
+	LightPosLoc     int32
+	LightColorLoc   int32
+	LightPowerLoc   int32
 }
 
 // Setup resources required to update/display the scene.
@@ -102,13 +115,13 @@ func (s *Scene) Setup(ctx *app.Context) error {
 
 	gl.Enable(gl.DEPTH_TEST)
 
-	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(ctx.ScreenWidth)/float32(ctx.ScreenHeight), 0.1, 10.0)
-	projectionUniform := gl.GetUniformLocation(s.Programs[progID], gl.Str("ProjMatrix\x00"))
-	gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
+	s.ProjMatrix = mgl32.Perspective(mgl32.DegToRad(45.0), float32(ctx.ScreenWidth)/float32(ctx.ScreenHeight), 0.1, 10.0)
+	s.ProjMatrixLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ProjMatrix\x00"))
+	gl.UniformMatrix4fv(s.ProjMatrixLoc, 1, false, &s.ProjMatrix[0])
 
-	camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
-	cameraUniform := gl.GetUniformLocation(s.Programs[progID], gl.Str("ViewMatrix\x00"))
-	gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
+	s.ViewMatrix = mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
+	s.ViewMatrixLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ViewMatrix\x00"))
+	gl.UniformMatrix4fv(s.ViewMatrixLoc, 1, false, &s.ViewMatrix[0])
 
 	modelMatrix := mgl32.Ident4()
 	s.ModelMatrixLoc = gl.GetUniformLocation(s.Programs[progID], gl.Str("ModelMatrix\x00"))

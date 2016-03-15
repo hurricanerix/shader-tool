@@ -11,16 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#version 330
+#version 410
 
 uniform mat4 ProjMatrix;
 uniform mat4 ViewMatrix;
 uniform mat4 ModelMatrix;
 uniform vec3 LightPos;
 
-in vec3 MCVertex;
-in vec3 MCNormal;
-in vec2 TexCoord0;
+layout( location = 0 ) in vec3 MCVertex;
+layout( location = 1 ) in vec3 MCNormal;
+layout( location = 2 ) in vec2 TexCoord0;
 
 out vec2 TexCoord;
 out vec3 Pos;
